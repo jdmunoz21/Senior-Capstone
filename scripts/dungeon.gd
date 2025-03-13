@@ -40,7 +40,7 @@ func _ready():
 	
 func _input(event):
 	if event.is_action_pressed("ui_select"):
-		for n in get_children():
+		'''for n in get_children():
 			n.queue_free()
 			
 		initialize_grid()
@@ -50,7 +50,9 @@ func _input(event):
 		shape_dungeon()
 		connect_unconnected_rooms()
 		findRoomDoors()
-		instantiate_tiles()
+		instantiate_tiles()'''
+		
+		testOpenDoors()
 	
 func initialize_grid():
 	grid = []
@@ -378,3 +380,10 @@ func findRoomDoors():
 				doorValues.append(roomDoors)
 			else:
 				doorValues.append([])
+
+func testOpenDoors():
+	for i in range(len(roomInstances)):
+		if doorValues[i] != []:
+			print(doorValues[i])
+			roomInstances[i].openDoors(doorValues[i][0],
+			doorValues[i][1], doorValues[i][2], doorValues[i][3])
