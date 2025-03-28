@@ -1,12 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://boiojjiqadqfs"]
+[gd_scene load_steps=2 format=3 uid="uid://boiojjiqadqfs"]
 
 [ext_resource type="Script" path="res://scripts/dungeon.gd" id="1_147ku"]
-[ext_resource type="PackedScene" uid="uid://dj4q27twseutb" path="res://scenes/characters/player.tscn" id="2_r2rbh"]
-[ext_resource type="PackedScene" uid="uid://ih3lwlsxkueo" path="res://scenes/room_transition_camera.tscn" id="3_n2xwn"]
 
 [node name="dungeon" type="Node2D"]
 script = ExtResource("1_147ku")
 
-[node name="player" parent="." instance=ExtResource("2_r2rbh")]
-
-[node name="roomTransitionCamera" parent="." instance=ExtResource("3_n2xwn")]
+[node name="Camera2D" type="Camera2D" parent="."]
+anchor_mode = 0
+enabled = false
+zoom = Vector2(0.067, 0.067)

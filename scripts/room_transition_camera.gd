@@ -4,7 +4,6 @@ extends Camera2D
 @onready var player = get_parent().get_node("player")
 
 func _ready():
-	print(screenSize)
 	set_screen_position()
 	await get_tree().process_frame
 	position_smoothing_enabled = true

@@ -37,7 +37,6 @@ func _ready():
 	while roomCount < 10:
 		setup_dungeon()
 		roomCount = findRoomCount()
-	# testOpenDoors()
 		
 func setup_dungeon():
 	initialize_grid()
@@ -50,8 +49,6 @@ func setup_dungeon():
 	limitChestRooms()
 	findRoomDoors()
 	instantiate_tiles()
-	remove_child(player)
-	remove_child(camera)
 	player = Player.instantiate()
 	add_child(player)
 	camera = Camera.instantiate()
@@ -60,7 +57,6 @@ func setup_dungeon():
 	
 	if start_room != null:
 		player.position = start_room
-		camera.set_screen_position()
 		
 func findRoomCount():
 	var roomCount = 0
@@ -72,6 +68,18 @@ func findRoomCount():
 	
 func _input(event):
 	if event.is_action_pressed("ui_select"):
+		'''for n in get_children():
+			n.queue_free()
+			
+		initialize_grid()
+		collapse_wave_function()
+		check_adjacent_tiles()
+		check_edges()
+		shape_dungeon()
+		connect_unconnected_rooms()
+		findRoomDoors()
+		instantiate_tiles()'''
+		
 		testOpenDoors()
 	
 	if event.is_action_pressed("ui_cancel"):
@@ -81,12 +89,6 @@ func _input(event):
 		else:
 			camera.enabled = true
 			$Camera2D.enabled = false
-			
-	if event.is_action_pressed("ui_accept"):
-		var roomCount = 0
-		while roomCount < 10:
-			setup_dungeon()
-			roomCount = findRoomCount()
 	
 func initialize_grid():
 	grid = []
@@ -125,25 +127,32 @@ func propogate_constraints(x, y):
 		var nx = x
 		var ny = y
 		
+		# Calculate neighbor coordinates based on direction
 		match direction:
 			"N": ny -= 1
 			"E": nx += 1
 			"S": ny += 1
 			"W": nx -= 1
 			
+		# Ensure neighbor is within grid bounds
 		if nx >= 0 and nx < GRID_WIDTH and ny >= 0 and ny < GRID_HEIGHT:
 			var neighbor_options = grid[nx][ny]
 			var valid_options = []
 			
+			# Check each option in the neighbor's possible tiles
 			for option in neighbor_options:
+				# Get the allowed tiles for the neighbor in the opposite direction
 				var allowed_tiles = tile_types[option][opposite_direction(direction)]
 				
+				# If the current tile is allowed for the neighbor, keep the option
 				if current_tile in allowed_tiles:
 					valid_options.append(option)
 			
+			# Update the neighbor's options to only include valid ones
 			if len(valid_options) > 0:
 				grid[nx][ny] = valid_options
 			else:
+				# If no valid options are left, set the neighbor to "wall" as a fallback
 				grid[nx][ny] = ["wall"]
 
 func opposite_direction(direction):
@@ -365,7 +374,7 @@ func connect_unconnected_rooms():
 
 		if closest_cell and closest_target:
 			carve_corridor(closest_cell, closest_target)
-			find_regions()
+			find_regions()  # Update regions after connecting
 
 func carve_corridor(start, end):
 	var x = int(start.x)
