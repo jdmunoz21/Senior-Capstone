@@ -27,7 +27,8 @@ namespace hamsterbyte.WFC
 			sumOfPossibleFrequencyLogFrequencies -= logFrequencies[i];
 		}
 
-		public double Entropy => Math.Log2(sumOfPossibleFrequencies) - sumOfPossibleFrequencyLogFrequencies / sumOfPossibleFrequencies + entropyNoise;
+		public double Entropy => Math.Log2(sumOfPossibleFrequencies) -
+			sumOfPossibleFrequencyLogFrequencies / sumOfPossibleFrequencies + entropyNoise;
 
 
 		private int WeightedRandomIndex()
@@ -43,6 +44,8 @@ namespace hamsterbyte.WFC
 					return i;
 				}
 			}
+
+			//If index returns -1 we know the collapse has failed.
 			return -1;
 		}
 
@@ -60,4 +63,5 @@ namespace hamsterbyte.WFC
 			return weightedRandomIndex;
 		}
 	}
+
 }

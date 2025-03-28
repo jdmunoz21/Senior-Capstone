@@ -11,6 +11,7 @@ namespace hamsterbyte.WFC
 				EntropyCoordinates coords = entropyHeap.Pop();
 				if (!cells[coords.Coordinates.X, coords.Coordinates.Y].Collapsed) return coords;
 			}
+
 			return EntropyCoordinates.Invalid;
 		}
 
@@ -36,6 +37,7 @@ namespace hamsterbyte.WFC
 					validCollapse = false;
 					return;
 				}
+
 				Coordinates[] cardinals = Coordinates.Cardinals;
 				for (int d = 0; d < adjacencyRules.GetLength(1); d++)
 				{
@@ -48,6 +50,7 @@ namespace hamsterbyte.WFC
 					{
 						continue;
 					}
+
 					WFCCell currentCell = cells[current.X, current.Y];
 					if (currentCell.Collapsed) continue;
 					for (int o = 0; o < adjacencyRules.GetLength(2); o++)
@@ -57,6 +60,7 @@ namespace hamsterbyte.WFC
 							currentCell.RemoveOption(o);
 						}
 					}
+
 					entropyHeap.Push(new EntropyCoordinates()
 					{
 						Coordinates = currentCell.Coordinates,
@@ -80,9 +84,11 @@ namespace hamsterbyte.WFC
 					Coordinates = cell.Coordinates,
 					Entropy = cell.Entropy
 				});
-				while (remainingUncollapsedCells > 0)
+
+				while (remainingUncollapsedCells > 0 && validCollapse)
 				{
 					EntropyCoordinates e = Observe();
+					Collapse(e.Coordinates);
 					Propagate(_wrap);
 				}
 
@@ -95,6 +101,7 @@ namespace hamsterbyte.WFC
 					break;
 				}
 			}
+
 			timer.Stop();
 			WFCResult result = new()
 			{

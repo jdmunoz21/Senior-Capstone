@@ -10,4 +10,3 @@ script = ExtResource("2_b56ob")
 width = 35
 height = 35
 rulePath = "res://proto_rules.json"
-wrap = true
