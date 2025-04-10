@@ -191,6 +191,7 @@ func instantiate_tiles():
 			tile_instance.position = Vector2(x * 2880, y * 1596)
 			add_child(tile_instance)
 			roomInstances.append(tile_instance)
+			await(get_tree().create_timer(0.1).timeout)
 			
 	for i in range(len(roomInstances)):
 		if doorValues[i] != []:

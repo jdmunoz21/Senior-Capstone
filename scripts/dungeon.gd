@@ -22,6 +22,7 @@ var chest_room = preload("res://scenes/rooms_tiles/dungeon_room_3.tscn")
 var bone_room = preload("res://scenes/rooms_tiles/dungeon_room_4.tscn")
 var Player = preload("res://scenes/characters/player.tscn")
 var Camera = preload("res://scenes/room_transition_camera.tscn")
+var label = preload("res://scenes/wfc_process_label.tscn")
 var player = null
 var camera = null
 var start_room = null
@@ -31,36 +32,93 @@ var regions = []
 
 var doorValues = []
 var roomInstances = []
+var labelGrid = []
+var labelInstances = []
+
+var paused = false
+
+@onready var timer = $Timer
 
 func _ready():
 	var roomCount = 0
 	while roomCount < 10:
-		setup_dungeon()
+		await setup_dungeon()
 		roomCount = findRoomCount()
-	# testOpenDoors()
+	#testOpenDoors()
+	
+func clear_screen():
+	for child in roomInstances:
+		remove_child(child)
+	for child in labelInstances:
+		remove_child(child)
 		
 func setup_dungeon():
-	initialize_grid()
-	collapse_wave_function()
+	if camera != null:
+		camera.enabled = false
+	$Camera2D.enabled = true
+	await clear_screen()
+	print('1')
+	await initialize_grid()
+	print('2')
+	await set_labels()
+	print('labels now')
+	await(get_tree().create_timer(3).timeout)
+	await collapse_wave_function()
+	print('3')
 	check_adjacent_tiles()
+	print('4')
 	check_edges()
+	print('5')
 	shape_dungeon()
+	print('6')
 	connect_unconnected_rooms()
+	print('7')
 	placeHallways()
+	print('8')
 	limitChestRooms()
+	print('9')
 	findRoomDoors()
-	instantiate_tiles()
+	print('10')
+	await setFinalLabelText()
+	await instantiate_tiles()
+	print('11')
+	#print('tiles instantiated')
+	await set_player()
+	print('12')
+	await find_start_room()
+	print('13')
+	
+	if start_room != null:
+		player.position = start_room
+		$Camera2D.position = start_room
+		await(get_tree().create_timer(0.1).timeout)
+		$Camera2D.zoom = Vector2(1,1)
+		await(get_tree().create_timer(0.5).timeout)
+		camera.set_screen_position()
+		camera.enabled = true
+		$Camera2D.position = Vector2(0,0)
+		$Camera2D.zoom = Vector2(0.067, 0.067)
+		$Camera2D.enabled = false
+		
+	if len(doorValues) != len(roomInstances):
+		await(get_tree().create_timer(3).timeout)
+		setup_dungeon()
+		
+func setFinalLabelText():
+	for x in range(GRID_WIDTH):
+		for y in range(GRID_HEIGHT):
+			labelGrid[x][y].text = grid[x][y][0]
+			await(get_tree().create_timer(0.1).timeout)
+			
+func set_player():
 	remove_child(player)
 	remove_child(camera)
+	player = null
+	camera = null
 	player = Player.instantiate()
 	add_child(player)
 	camera = Camera.instantiate()
 	add_child(camera)
-	find_start_room()
-	
-	if start_room != null:
-		player.position = start_room
-		camera.set_screen_position()
 		
 func findRoomCount():
 	var roomCount = 0
@@ -71,22 +129,31 @@ func findRoomCount():
 	return roomCount
 	
 func _input(event):
-	if event.is_action_pressed("ui_select"):
+	if event.is_action_pressed("doors"):
 		testOpenDoors()
 	
 	if event.is_action_pressed("ui_cancel"):
-		if camera.enabled:
-			camera.enabled = false
-			$Camera2D.enabled = true
-		else:
-			camera.enabled = true
-			$Camera2D.enabled = false
+		if camera != null:
+			if camera.enabled:
+				camera.enabled = false
+				$Camera2D.enabled = true
+			else:
+				camera.enabled = true
+				$Camera2D.enabled = false
 			
 	if event.is_action_pressed("ui_accept"):
 		var roomCount = 0
 		while roomCount < 10:
-			setup_dungeon()
+			await setup_dungeon()
 			roomCount = findRoomCount()
+			
+	if Input.is_action_just_pressed("pause_game"):
+		if paused:
+			paused = false
+			timer.paused = false
+		else:
+			paused = true
+			timer.paused = true
 	
 func initialize_grid():
 	grid = []
@@ -94,6 +161,23 @@ func initialize_grid():
 		grid.append([])
 		for y in range(GRID_HEIGHT):
 			grid[x].append(["floor", "wall", "chest", "bones"])
+		
+func set_labels():
+	labelGrid = []
+	for x in range(GRID_WIDTH):
+		labelGrid.append([])
+		for y in range(GRID_HEIGHT):
+			var label_instance = label.instantiate()
+			label_instance.position = Vector2(x*2880,y*1596)
+			labelGrid[x].append(label_instance)
+			labelInstances.append(label_instance)
+			label_instance.text = '''
+			floor
+			wall
+			chest
+			bones'''
+			
+			add_child(label_instance)
 			
 func collapse_wave_function():
 	while not is_fully_collapsed():
@@ -115,7 +199,13 @@ func collapse_wave_function():
 		grid[x][y] = [grid[x][y][rng.randi() % len(grid[x][y])]]
 		print([grid[x][y][rng.randi() % len(grid[x][y])]])
 		
-		propogate_constraints(x,y)
+		await propogate_constraints(x,y)
+		
+		'''labelGrid[x][y].text = ''
+		for option in grid[x][y]:
+			labelGrid[x][y].text += option + "\n"
+			
+		await(get_tree().create_timer(0.1).timeout)'''
 
 func propogate_constraints(x, y):
 	var current_tile = grid[x][y][0]
@@ -135,11 +225,26 @@ func propogate_constraints(x, y):
 			var neighbor_options = grid[nx][ny]
 			var valid_options = []
 			
+			'''labelGrid[nx][ny].text = ''
+			for option in neighbor_options:
+				labelGrid[nx][ny].text += option + "\n"
+				
+			await(get_tree().create_timer(0.1).timeout)'''
+			
 			for option in neighbor_options:
 				var allowed_tiles = tile_types[option][opposite_direction(direction)]
 				
 				if current_tile in allowed_tiles:
 					valid_options.append(option)
+			
+			'''labelGrid[nx][ny].text = ''
+			if len(valid_options) > 0:
+				for option in valid_options:
+					labelGrid[nx][ny].text += option + "\n"
+			else:
+				labelGrid[nx][ny].text = 'wall'
+				
+			await(get_tree().create_timer(0.1).timeout)'''
 			
 			if len(valid_options) > 0:
 				grid[nx][ny] = valid_options
@@ -182,11 +287,14 @@ func instantiate_tiles():
 			tile_instance.position = Vector2(x * 2880, y * 1596)
 			add_child(tile_instance)
 			roomInstances.append(tile_instance)
-			
-	for i in range(len(roomInstances)):
-		if doorValues[i] != []:
-			roomInstances[i].setDoors(doorValues[i][0],
-			doorValues[i][1], doorValues[i][2], doorValues[i][3])
+			timer.start()
+			await timer.timeout
+	
+	if len(roomInstances) == len(doorValues):
+		for i in range(len(roomInstances)):
+			if doorValues[i] != []:
+				roomInstances[i].setDoors(doorValues[i][0],
+				doorValues[i][1], doorValues[i][2], doorValues[i][3])
 	
 func find_start_room():
 	for x in range(GRID_WIDTH):
@@ -433,7 +541,6 @@ func findRoomDoors():
 func testOpenDoors():
 	for i in range(len(roomInstances)):
 		if doorValues[i] != []:
-			print(doorValues[i])
 			roomInstances[i].openDoors(doorValues[i][0],
 			doorValues[i][1], doorValues[i][2], doorValues[i][3])
 

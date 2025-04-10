@@ -424,8 +424,7 @@ script = ExtResource("1_8f8rn")
 texture_filter = 1
 sprite_frames = SubResource("SpriteFrames_xfn21")
 animation = &"death"
-frame = 1
-frame_progress = 0.0527364
+frame_progress = 0.344668
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0.5, 7.5)

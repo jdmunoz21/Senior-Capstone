@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3 uid="uid://bdwvx0tsq6mvj"]
+
+[sub_resource type="CanvasTexture" id="CanvasTexture_t63tc"]
+
+[node name="wfcProcessLabel" type="Label"]
+offset_right = 2880.0
+offset_bottom = 1596.0
+theme_override_font_sizes/font_size = 200
+text = "LABEL"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="."]
+modulate = Color(0.0904823, 0.0904823, 0.0904823, 1)
+show_behind_parent = true
+layout_mode = 0
+offset_right = 2880.0
+offset_bottom = 1596.0
+texture = SubResource("CanvasTexture_t63tc")

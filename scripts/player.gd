@@ -3,6 +3,9 @@ extends CharacterBody2D
 const SPEED = 500.0
 var direction = "none"
 
+func _ready():
+	play_animation(0)
+
 func _physics_process(delta):
 	player_movement(delta)
 
@@ -61,3 +64,5 @@ func play_animation(movement):
 			anim.play("front_walk")
 		elif movement == 0:
 			anim.play("front_idle")
+	if direction == "none":
+		anim.play("front_idle")

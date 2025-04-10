@@ -7,5 +7,11 @@ script = ExtResource("1_147ku")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0
-enabled = false
 zoom = Vector2(0.067, 0.067)
+limit_smoothed = true
+position_smoothing_enabled = true
+position_smoothing_speed = 1.0
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 0.1
+one_shot = true
