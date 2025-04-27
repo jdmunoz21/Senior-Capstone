@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://ih3lwlsxkueo"]
+
+[ext_resource type="Script" path="res://scripts/room_transition_camera.gd" id="1_we2y2"]
+
+[node name="roomTransitionCamera" type="Camera2D"]
+ignore_rotation = false
+enabled = false
+script = ExtResource("1_we2y2")

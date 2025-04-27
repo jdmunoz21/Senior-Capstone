@@ -1,9 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://boiojjiqadqfs"]
+[gd_scene load_steps=2 format=3 uid="uid://dy0rbdegfrcd0"]
 
-[ext_resource type="Script" path="res://scripts/dungeon.gd" id="1_147ku"]
+[ext_resource type="Script" path="res://scripts/island.gd" id="1_yujij"]
 
-[node name="dungeon" type="Node2D"]
-script = ExtResource("1_147ku")
+[node name="island" type="Node2D"]
+script = ExtResource("1_yujij")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0

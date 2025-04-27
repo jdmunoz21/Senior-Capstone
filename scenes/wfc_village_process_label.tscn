@@ -1,0 +1,38 @@
+[gd_scene load_steps=4 format=3 uid="uid://c50q1lsbtpsa3"]
+
+[ext_resource type="Script" path="res://scripts/wfc_village_process_label.gd" id="1_qcqkc"]
+[ext_resource type="Texture2D" uid="uid://ca5p3pvh40x1g" path="res://assets/media/dungeon_room.jpeg" id="2_dtaj6"]
+
+[sub_resource type="CanvasTexture" id="CanvasTexture_t63tc"]
+
+[node name="wfcVillageProcessLabel" type="Label"]
+offset_right = 2880.0
+offset_bottom = 1596.0
+theme_override_font_sizes/font_size = 200
+text = "NULL"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("1_qcqkc")
+
+[node name="TextureRect" type="TextureRect" parent="."]
+modulate = Color(0.0904823, 0.0904823, 0.0904823, 1)
+show_behind_parent = true
+layout_mode = 0
+offset_right = 2880.0
+offset_bottom = 1596.0
+texture = SubResource("CanvasTexture_t63tc")
+
+[node name="changeRoomButton" type="Button" parent="."]
+layout_mode = 0
+offset_right = 2880.0
+offset_bottom = 1596.0
+flat = true
+
+[node name="roomPreview" type="Sprite2D" parent="."]
+visible = false
+show_behind_parent = true
+position = Vector2(1440, 798)
+scale = Vector2(1.00139, 1.00885)
+texture = ExtResource("2_dtaj6")
+
+[connection signal="pressed" from="changeRoomButton" to="." method="_on_change_room_button_pressed"]
