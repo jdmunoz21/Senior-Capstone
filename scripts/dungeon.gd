@@ -1,13 +1,15 @@
 extends Node2D
 
 var tile_types = {
-	"floor" : {"N" : ["floor", "wall", "chest", "bones"], "E" : ["floor", "wall", "chest", "bones"], "S": ["floor", "wall", "chest", "bones"], "W" : ["floor", "wall", "chest", "bones"]},
+	"floor" : {"N" : ["floor", "wall", "chest", "bones"], "E" : ["floor", "wall", "chest", "bones", "h_hall", "h_hall_room"], "S": ["floor", "wall", "chest", "bones"], "W" : ["floor", "wall", "chest", "bones", "h_hall", "h_hall_room"]},
 	"wall" : {"N" : ["floor", "wall"], "E" : ["floor", "wall"], "S": ["floor", "wall"], "W" : ["floor", "wall"]},
-	"chest" : {"N" : ["floor", "bones"], "E" : ["floor", "bones"], "S": ["floor", "bones"], "W" : ["floor", "bones"]},
-	"bones" : {"N" : ["floor", "chest", "bones"], "E" : ["floor", "chest", "bones"], "S": ["floor", "chest", "bones"], "W" : ["floor", "chest", "bones"]}
+	"chest" : {"N" : ["floor", "bones"], "E" : ["floor", "bones", "h_hall", "h_hall_room"], "S": ["floor", "bones"], "W" : ["floor", "bones", "h_hall", "h_hall_room"]},
+	"bones" : {"N" : ["floor", "chest", "bones"], "E" : ["floor", "chest", "bones", "h_hall", "h_hall_room"], "S": ["floor", "chest", "bones"], "W" : ["floor", "chest", "bones", "h_hall", "h_hall_room"]},
+	"h_hall" : {"N" : ["wall"], "E" : ["floor", "chest", "bones"], "S": ["wall"], "W" : ["floor", "chest", "bones"]},
+	"h_hall_room" : {"N" : ["floor", "chest", "bones"], "E" : ["wall"], "S": ["floor", "chest", "bones"], "W" : ["wall"]}
 }
 
-const GRID_WIDTH = 17
+const GRID_WIDTH = 15
 const GRID_HEIGHT = 15
 
 var grid = []
@@ -34,59 +36,46 @@ var doorValues = []
 var roomInstances = []
 var labelGrid = []
 var labelInstances = []
+var fixed_tiles = []
 
 var paused = false
 
 @onready var timer = $Timer
 
+var animationOrder = []
+
+var timing = 0
+
+var next_scene = preload('res://scripts/village.gd')
+
 func _ready():
-	var roomCount = 0
-	while roomCount < 10:
-		await setup_dungeon()
-		roomCount = findRoomCount()
-	#testOpenDoors()
+	ready_dungeon()
 	
 func clear_screen():
-	for child in roomInstances:
-		remove_child(child)
-	for child in labelInstances:
-		remove_child(child)
+	for i in animationOrder:
+		remove_child(roomInstances[i[0]][i[1]])
+		remove_child(labelGrid[i[0]][i[1]])
 		
-func setup_dungeon():
+func ready_dungeon():
 	if camera != null:
 		camera.enabled = false
 	$Camera2D.enabled = true
 	await clear_screen()
-	print('1')
 	await initialize_grid()
-	print('2')
 	await set_labels()
-	print('labels now')
-	await(get_tree().create_timer(3).timeout)
+		
+func setup_dungeon():
+	await set_grid_by_labels()
 	await collapse_wave_function()
-	print('3')
-	check_adjacent_tiles()
-	print('4')
-	check_edges()
-	print('5')
-	shape_dungeon()
-	print('6')
-	connect_unconnected_rooms()
-	print('7')
-	placeHallways()
-	print('8')
-	limitChestRooms()
-	print('9')
-	findRoomDoors()
-	print('10')
-	await setFinalLabelText()
+	await check_adjacent_tiles()
+	await check_edges()
+	await shape_dungeon()
+	await connect_unconnected_rooms()
+	await placeHallways()
+	await findRoomDoors()
 	await instantiate_tiles()
-	print('11')
-	#print('tiles instantiated')
 	await set_player()
-	print('12')
 	await find_start_room()
-	print('13')
 	
 	if start_room != null:
 		player.position = start_room
@@ -99,16 +88,6 @@ func setup_dungeon():
 		$Camera2D.position = Vector2(0,0)
 		$Camera2D.zoom = Vector2(0.067, 0.067)
 		$Camera2D.enabled = false
-		
-	if len(doorValues) != len(roomInstances):
-		await(get_tree().create_timer(3).timeout)
-		setup_dungeon()
-		
-func setFinalLabelText():
-	for x in range(GRID_WIDTH):
-		for y in range(GRID_HEIGHT):
-			labelGrid[x][y].text = grid[x][y][0]
-			await(get_tree().create_timer(0.1).timeout)
 			
 func set_player():
 	remove_child(player)
@@ -128,9 +107,19 @@ func findRoomCount():
 				roomCount += 1
 	return roomCount
 	
+func set_grid_by_labels():
+	for x in range(GRID_WIDTH):
+		for y in range(GRID_HEIGHT):
+			if labelGrid[x][y].text != 'NULL':
+				grid[x][y] = [labelGrid[x][y].text, labelGrid[x][y].text]
+				fixed_tiles.append([x,y,labelGrid[x][y].text])
+	
 func _input(event):
 	if event.is_action_pressed("doors"):
 		testOpenDoors()
+		
+	if event.is_action_pressed("switch scenes"):
+		get_tree().change_scene_to_file('res://scenes/rooms_tiles/island.tscn')
 	
 	if event.is_action_pressed("ui_cancel"):
 		if camera != null:
@@ -155,12 +144,23 @@ func _input(event):
 			paused = true
 			timer.paused = true
 	
+	if event.is_action_pressed("initiate"):
+		await setup_dungeon()
+		
+	if event.is_action_pressed("ready dungeon"):
+		await ready_dungeon()
+	
 func initialize_grid():
 	grid = []
+	roomInstances = []
 	for x in range(GRID_WIDTH):
 		grid.append([])
+		roomInstances.append([])
+		doorValues.append([])
 		for y in range(GRID_HEIGHT):
-			grid[x].append(["floor", "wall", "chest", "bones"])
+			grid[x].append(["floor", "floor", "wall", "chest", "bones"])
+			roomInstances[x].append([])
+			doorValues[x].append([])
 		
 func set_labels():
 	labelGrid = []
@@ -170,16 +170,16 @@ func set_labels():
 			var label_instance = label.instantiate()
 			label_instance.position = Vector2(x*2880,y*1596)
 			labelGrid[x].append(label_instance)
-			labelInstances.append(label_instance)
-			label_instance.text = '''
-			floor
-			wall
-			chest
-			bones'''
 			
 			add_child(label_instance)
 			
 func collapse_wave_function():
+	animationOrder = []
+	
+	var random_x = rng.randi_range(0, GRID_WIDTH-1)
+	var random_y = rng.randi_range(0, GRID_HEIGHT-1)
+	var random_tile_picked = false
+	
 	while not is_fully_collapsed():
 		var min_entropy = INF
 		var min_entropy_cell = null
@@ -190,6 +190,11 @@ func collapse_wave_function():
 				if len(options) > 1 and len(options) < min_entropy:
 					min_entropy = len(options)
 					min_entropy_cell = Vector2(x,y)
+				elif len(options) > 1 and len(options) == min_entropy:
+					if not random_tile_picked:
+						min_entropy = len(grid[random_x][random_y])
+						min_entropy_cell = Vector2(random_x,random_y)
+						random_tile_picked = true
 		
 		if min_entropy_cell == null:
 			break
@@ -197,15 +202,10 @@ func collapse_wave_function():
 		var x = int(min_entropy_cell.x)
 		var y = int(min_entropy_cell.y)
 		grid[x][y] = [grid[x][y][rng.randi() % len(grid[x][y])]]
-		print([grid[x][y][rng.randi() % len(grid[x][y])]])
 		
 		await propogate_constraints(x,y)
 		
-		'''labelGrid[x][y].text = ''
-		for option in grid[x][y]:
-			labelGrid[x][y].text += option + "\n"
-			
-		await(get_tree().create_timer(0.1).timeout)'''
+		animationOrder.append([x,y])
 
 func propogate_constraints(x, y):
 	var current_tile = grid[x][y][0]
@@ -225,26 +225,11 @@ func propogate_constraints(x, y):
 			var neighbor_options = grid[nx][ny]
 			var valid_options = []
 			
-			'''labelGrid[nx][ny].text = ''
-			for option in neighbor_options:
-				labelGrid[nx][ny].text += option + "\n"
-				
-			await(get_tree().create_timer(0.1).timeout)'''
-			
 			for option in neighbor_options:
 				var allowed_tiles = tile_types[option][opposite_direction(direction)]
 				
 				if current_tile in allowed_tiles:
 					valid_options.append(option)
-			
-			'''labelGrid[nx][ny].text = ''
-			if len(valid_options) > 0:
-				for option in valid_options:
-					labelGrid[nx][ny].text += option + "\n"
-			else:
-				labelGrid[nx][ny].text = 'wall'
-				
-			await(get_tree().create_timer(0.1).timeout)'''
 			
 			if len(valid_options) > 0:
 				grid[nx][ny] = valid_options
@@ -266,36 +251,53 @@ func is_fully_collapsed():
 	return true
 	
 func instantiate_tiles():
-	roomInstances = []
-	for x in range(GRID_WIDTH):
-		for y in range(GRID_HEIGHT):
-			var tile_name = grid[x][y][0]
-			var tile_scene = null
-			if tile_name == "floor":
-				tile_scene = floor
-			elif tile_name == "h_hall_room":
-				tile_scene = h_hall_room
-			elif tile_name == "h_hall":
-				tile_scene = h_hall	
-			elif tile_name == "chest":
-				tile_scene = chest_room
-			elif tile_name == "bones":
-				tile_scene = bone_room
-			else:
-				tile_scene = wall
-			var tile_instance = tile_scene.instantiate()
-			tile_instance.position = Vector2(x * 2880, y * 1596)
-			add_child(tile_instance)
-			roomInstances.append(tile_instance)
+	for i in animationOrder:
+		for tile in fixed_tiles:
+			grid[tile[0]][tile[1]] = [tile[2]]
+		var tile_name = grid[i[0]][i[1]][0]
+		var tile_scene = null
+		if tile_name == "floor":
+			tile_scene = floor
+		elif tile_name == "h_hall_room":
+			tile_scene = h_hall_room
+		elif tile_name == "h_hall":
+			tile_scene = h_hall	
+		elif tile_name == "chest":
+			tile_scene = chest_room
+		elif tile_name == "bones":
+			tile_scene = bone_room
+		else:
+			tile_scene = wall
+		var tile_instance = tile_scene.instantiate()
+		tile_instance.position = Vector2(i[0] * 2880, i[1] * 1596)
+		add_child(tile_instance)
+		roomInstances[i[0]][i[1]] = tile_instance
+		if timing % 3 == 0:
 			timer.start()
 			await timer.timeout
+		
+		timing += 1
+		
+	for i in animationOrder:
+		var x = i[0]
+		var y = i[1]
+		
+		if doorValues[x][y] != []:
+			roomInstances[x][y].setDoors(doorValues[x][y][0],
+			doorValues[x][y][1], doorValues[x][y][2], doorValues[x][y][3])
+	
+func setDoorValues():
+	var roomInstances = []
+	for x in range(GRID_WIDTH):
+		for y in range(GRID_HEIGHT):
+			roomInstances.append(1)
 	
 	if len(roomInstances) == len(doorValues):
 		for i in range(len(roomInstances)):
 			if doorValues[i] != []:
 				roomInstances[i].setDoors(doorValues[i][0],
 				doorValues[i][1], doorValues[i][2], doorValues[i][3])
-	
+
 func find_start_room():
 	for x in range(GRID_WIDTH):
 		for y in range(GRID_HEIGHT):
@@ -376,9 +378,6 @@ func shape_dungeon():
 						top_tile = grid[x][y-1]
 					if y < GRID_HEIGHT - 1:
 						bottom_tile = grid[x][y+1]
-					
-					# print("--------- NEW TILE ---------")
-					
 						
 					var adjacent_tiles = []
 					adjacent_tiles.append(left_tile[0])
@@ -386,13 +385,9 @@ func shape_dungeon():
 					adjacent_tiles.append(top_tile[0])
 					adjacent_tiles.append(bottom_tile[0])
 					
-					# print(adjacent_tiles)
-					
 					for z in adjacent_tiles:
 						if z == "floor":
 							stay_score += 1
-						
-					# print(stay_score)
 						
 					if stay_score < 2:
 						grid[x][y][0] = "wall"
@@ -444,10 +439,10 @@ func flood_fill(x, y, visited, region):
 		visited[cx][cy] = true
 		region.append(Vector2(cx, cy))
 
-		stack.append(Vector2(cx, cy - 1))  # North
-		stack.append(Vector2(cx + 1, cy))  # East
-		stack.append(Vector2(cx, cy + 1))  # South
-		stack.append(Vector2(cx - 1, cy))  # West
+		stack.append(Vector2(cx, cy - 1)) 
+		stack.append(Vector2(cx + 1, cy))  
+		stack.append(Vector2(cx, cy + 1))
+		stack.append(Vector2(cx - 1, cy)) 
 
 func connect_unconnected_rooms():
 	find_regions()
@@ -481,68 +476,72 @@ func carve_corridor(start, end):
 	var target_x = int(end.x)
 	var target_y = int(end.y)
 
-	# Horizontal Path
 	while x != target_x:
 		if grid[x][y][0] == "wall":
 			grid[x][y] = ["floor"]
 		x += sign(target_x - x)
 
-	# Vertical Path
 	while y != target_y:
 		if grid[x][y][0] == "wall":
 			grid[x][y] = ["floor"]
 		y += sign(target_y - y)
-
+		
 func findRoomDoors():
-	doorValues = []
-	for x in range(GRID_WIDTH):
-		for y in range(GRID_HEIGHT):
-			if grid[x][y][0] in rooms_that_require_doors:
-				var left_tile = null
-				var right_tile = null
-				var top_tile = null
-				var bottom_tile = null
-				
-				if x > 0:
-					left_tile = grid[x-1][y][0]
-				if x < GRID_WIDTH - 1:
-					right_tile = grid[x+1][y][0]
-				if y > 0:
-					top_tile = grid[x][y-1][0]
-				if y < GRID_HEIGHT - 1:
-					bottom_tile = grid[x][y+1][0]
-				
-				var roomDoors = []
-				
-				if left_tile in rooms_that_require_doors or left_tile == "h_hall" or left_tile == "h_hall_room":
-					roomDoors.append(true)
-				else:
-					roomDoors.append(false)
-				
-				if right_tile in rooms_that_require_doors or right_tile == "h_hall" or right_tile == "h_hall_room":
-					roomDoors.append(true)
-				else:
-					roomDoors.append(false)
-					
-				if top_tile in rooms_that_require_doors:
-					roomDoors.append(true)
-				else:
-					roomDoors.append(false)
-				
-				if bottom_tile in rooms_that_require_doors:
-					roomDoors.append(true)
-				else:
-					roomDoors.append(false)
-					
-				doorValues.append(roomDoors)
+	for i in animationOrder:
+		if grid[i[0]][i[1]][0] in rooms_that_require_doors:
+			var left_tile = null
+			var right_tile = null
+			var top_tile = null
+			var bottom_tile = null
+			
+			var x = i[0]
+			var y = i[1]
+			
+			if x > 0:
+				left_tile = grid[x-1][y][0]
+			if x < GRID_WIDTH - 1:
+				right_tile = grid[x+1][y][0]
+			if y > 0:
+				top_tile = grid[x][y-1][0]
+			if y < GRID_HEIGHT - 1:
+				bottom_tile = grid[x][y+1][0]
+			
+			var roomDoors = []
+			
+			if left_tile in rooms_that_require_doors or left_tile == "h_hall" or left_tile == "h_hall_room":
+				roomDoors.append(true)
 			else:
-				doorValues.append([])
-
+				roomDoors.append(false)
+			
+			if right_tile in rooms_that_require_doors or right_tile == "h_hall" or right_tile == "h_hall_room":
+				roomDoors.append(true)
+			else:
+				roomDoors.append(false)
+				
+			if top_tile in rooms_that_require_doors:
+				roomDoors.append(true)
+			else:
+				roomDoors.append(false)
+			
+			if bottom_tile in rooms_that_require_doors:
+				roomDoors.append(true)
+			else:
+				roomDoors.append(false)
+				
+			doorValues[x][y] = roomDoors
+		else:
+			var x = i[0]
+			var y = i[1]
+			doorValues[x][y] = []
+			
 func testOpenDoors():
-	for i in range(len(roomInstances)):
-		if doorValues[i] != []:
-			roomInstances[i].openDoors(doorValues[i][0],
-			doorValues[i][1], doorValues[i][2], doorValues[i][3])
+	for i in animationOrder:
+		var x = i[0]
+		var y = i[1]
+		
+		if doorValues[x][y] != []:
+			roomInstances[x][y].openDoors(doorValues[x][y][0],
+			doorValues[x][y][1], doorValues[x][y][2], doorValues[x][y][3])
 
 func placeHallways():
 	for x in range(GRID_WIDTH):
@@ -570,26 +569,3 @@ func placeHallways():
 						grid[x][y][0] = "h_hall_room"
 					if chance_of_hallway > 20 and chance_of_hallway <= 50:
 						grid[x][y][0] = "h_hall"
-						
-func limitChestRooms():
-			
-	var chestAmount = 0
-	
-	for x in range(GRID_WIDTH):
-		for y in range(GRID_HEIGHT):
-			if grid[x][y][0] == "chest":
-				chestAmount += 1
-	
-	while chestAmount > 3:			
-		for x in range(GRID_WIDTH):
-			for y in range(GRID_HEIGHT):
-				if grid[x][y][0] == "chest":
-					grid[x][y][0] = "floor"
-		
-		chestAmount = 0
-	
-		for x in range(GRID_WIDTH):
-			for y in range(GRID_HEIGHT):
-				if grid[x][y][0] == "chest":
-					chestAmount += 1
-		

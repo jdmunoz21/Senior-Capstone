@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3 uid="uid://dy0rbdegfrcd0"]
+
+[ext_resource type="Script" path="res://scripts/island.gd" id="1_yujij"]
+
+[node name="island" type="Node2D"]
+script = ExtResource("1_yujij")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+anchor_mode = 0
+zoom = Vector2(0.067, 0.067)
+limit_smoothed = true
+position_smoothing_enabled = true
+position_smoothing_speed = 1.0
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 0.1
+one_shot = true
